@@ -1,0 +1,36 @@
+{% load static %}<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вхід | StockLogix</title>
+    <link rel="stylesheet" href="{% static 'inventory/css/shop.css' %}">
+</head>
+<body>
+<main class="login-wrap">
+    <div class="login-card">
+        <a href="{% url 'shop' %}" class="shop-brand">
+            <span class="shop-logo">S</span> Stock<span>Logix</span>
+        </a>
+        <h1>Вхід для співробітників</h1>
+        <p class="muted">Адмін-панель доступна лише адміністраторам.</p>
+
+        {% if error %}<div class="shop-message error">{{ error }}</div>{% endif %}
+
+        <form method="post" class="form-card">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+            <label>Логін
+                <input type="text" name="username" autocomplete="username" required autofocus>
+            </label>
+            <label>Пароль
+                <input type="password" name="password" autocomplete="current-password" required>
+            </label>
+            <button type="submit" class="submit-btn">Увійти</button>
+        </form>
+
+        <p><a href="{% url 'shop' %}" class="muted">← До магазину</a></p>
+    </div>
+</main>
+</body>
+</html>
