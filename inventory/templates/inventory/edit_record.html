@@ -1,0 +1,55 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}{% if record_id %}Редагування запису{% else %}Додавання запису{% endif %} | StockLogix{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>{% if record_id %}Редагування запису{% else %}Додавання запису{% endif %}</h1>
+        <p class="muted">{{ table_title }}</p>
+    </div>
+    <a href="{% url 'manage_table' table %}" class="secondary-button">Назад до списку</a>
+</div>
+
+<div class="panel record-form-panel">
+    <form method="post">
+        {% csrf_token %}
+
+        {% for field in fields %}
+        <div class="form-group">
+            <label for="field_{{ field.name }}">{{ field.label }}</label>
+
+            {% if field.type == "textarea" %}
+                <textarea id="field_{{ field.name }}" name="{{ field.name }}" rows="3"
+                          {% if field.required %}required{% endif %}>{{ field.value }}</textarea>
+
+            {% elif field.type == "select" %}
+                <select id="field_{{ field.name }}" name="{{ field.name }}"
+                        {% if field.required %}required{% endif %}>
+                    <option value="">— оберіть —</option>
+                    {% for option in field.options %}
+                        <option value="{{ option.value }}"
+                            {% if option.value == field.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+
+            {% else %}
+                <input id="field_{{ field.name }}" type="{{ field.type }}"
+                       name="{{ field.name }}" value="{{ field.value }}"
+                       {% if field.step %}step="{{ field.step }}" min="0"{% endif %}
+                       {% if field.required %}required{% endif %}>
+            {% endif %}
+
+            {% if field.help %}
+                <small class="muted">{{ field.help }}</small>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        <div class="form-actions">
+            <button type="submit" class="primary-button">Зберегти</button>
+            <a href="{% url 'manage_table' table %}" class="secondary-button">Скасувати</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

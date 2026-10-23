@@ -1,0 +1,76 @@
+{% extends 'inventory/base.html' %}
+{% load custom_filters %}
+
+{% block title %}{{ table_title }} | StockLogix{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>{{ table_title }}</h1>
+        <p class="muted">Керування записами бази даних</p>
+    </div>
+
+    {% if table == 'warehouse_products' %}
+    <a href="{% url 'manage_stock' %}" class="primary-button">Змінити залишки</a>
+    {% else %}
+    <a href="{% url 'add_record' table %}" class="primary-button">+ Додати запис</a>
+    {% endif %}
+</div>
+
+<div class="panel">
+    <form method="get" class="search-form">
+        <input type="text" name="q" value="{{ search }}" placeholder="Пошук у таблиці...">
+        <button type="submit" class="primary-button">Знайти</button>
+        {% if search %}
+            <a href="{% url 'manage_table' table %}" class="secondary-button">Очистити</a>
+        {% endif %}
+    </form>
+
+    <p class="muted">Кількість знайдених записів: {{ total_records }}</p>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    {% for column in columns %}
+                    <th>{{ column_labels|get_item:column }}</th>
+                    {% endfor %}
+                    <th>Дії</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for record in records %}
+                <tr>
+                    {% for value in record.values %}
+                    <td>{{ value|default_if_none:"—" }}</td>
+                    {% endfor %}
+
+                    <td class="table-actions">
+                        {% if record.id %}
+                        <a href="{% url 'edit_record' table record.id %}"
+                           class="secondary-button">Редагувати</a>
+
+                        <form method="post"
+                              action="{% url 'delete_record' table record.id %}"
+                              onsubmit="return confirm('Ви справді хочете видалити цей запис?');">
+                            {% csrf_token %}
+                            <button type="submit" class="danger-button">Видалити</button>
+                        </form>
+                        {% else %}
+                        <a href="{% url 'manage_stock' %}" class="muted">Через «Залишки»</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{{ columns|length|add:1 }}">Записів поки немає.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include 'inventory/_pagination.html' %}
+</div>
+{% endblock %}
