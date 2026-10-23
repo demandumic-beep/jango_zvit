@@ -1,0 +1,56 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Звернення №{{ ticket.0 }} | StockLogix{% endblock %}
+
+{% block content %}
+<div class="welcome-row">
+    <div>
+        <div class="eyebrow">ПІДТРИМКА / ЗВЕРНЕННЯ</div>
+        <h1>#{{ ticket.0 }} · {{ ticket.1 }}</h1>
+        <p class="page-description">
+            {{ ticket.4|date:"d.m.Y H:i" }} ·
+            Клієнт: {{ ticket.9|default:"—" }}
+            {% if ticket.10 %}· {{ ticket.10 }}{% endif %}
+            {% if ticket.11 %}· {{ ticket.11 }}{% endif %}
+            {% if ticket.7 %}· <a href="{% url 'order_detail' ticket.7 %}">замовлення №{{ ticket.7 }}</a>{% endif %}
+        </p>
+    </div>
+    <a href="{% url 'support_list' %}" class="secondary-button">До списку</a>
+</div>
+
+<section class="panel">
+    <div class="panel-heading">
+        <div><h2>Повідомлення клієнта</h2></div>
+        <span class="badge {{ badge }}">{{ ticket.3 }}</span>
+    </div>
+    <div class="ticket-box">{{ ticket.2|linebreaksbr }}</div>
+</section>
+
+<section class="panel">
+    <div class="panel-heading">
+        <div>
+            <h2>Відповідь</h2>
+            <p>{% if ticket.5 %}Остання відповідь: {{ ticket.6|date:"d.m.Y H:i" }}{% else %}Відповіді ще немає.{% endif %}</p>
+        </div>
+    </div>
+
+    <form method="post" class="record-form-panel">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="admin_reply">Текст відповіді (клієнт побачить його в розділі «Підтримка»)</label>
+            <textarea id="admin_reply" name="admin_reply" rows="6" maxlength="2000">{{ ticket.5|default_if_none:"" }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="status">Статус</label>
+            <select id="status" name="status">
+                {% for s in statuses %}
+                    <option value="{{ s }}" {% if s == ticket.3 %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="primary-button">Зберегти</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

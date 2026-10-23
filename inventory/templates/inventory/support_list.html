@@ -1,0 +1,47 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Підтримка | StockLogix{% endblock %}
+
+{% block content %}
+<div class="welcome-row">
+    <div>
+        <div class="eyebrow">КЛІЄНТИ / ПІДТРИМКА</div>
+        <h1>Звернення клієнтів</h1>
+        <p class="page-description">Усі скарги та питання, незакриті зверху.</p>
+    </div>
+</div>
+
+<section class="panel">
+    <div class="filter-chips">
+        <a href="{% url 'support_list' %}" class="{% if not status %}active{% endif %}">Усі</a>
+        {% for name, count in statuses %}
+            <a href="?status={{ name|urlencode }}" class="{% if status == name %}active{% endif %}">{{ name }} ({{ count }})</a>
+        {% endfor %}
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>№</th><th>КЛІЄНТ</th><th>ТЕМА</th><th>ЗАМОВЛЕННЯ</th><th>ДАТА</th><th>СТАТУС</th><th>ДІЇ</th></tr>
+            </thead>
+            <tbody>
+                {% for t in tickets %}
+                <tr>
+                    <td><strong>#{{ t.id }}</strong></td>
+                    <td>{{ t.client }}</td>
+                    <td>{{ t.subject }}</td>
+                    <td>{% if t.order_id %}<a href="{% url 'order_detail' t.order_id %}">№{{ t.order_id }}</a>{% else %}—{% endif %}</td>
+                    <td>{{ t.created|date:"d.m.Y H:i" }}</td>
+                    <td><span class="badge {{ t.badge }}">{{ t.status }}</span></td>
+                    <td><a href="{% url 'support_detail' t.id %}" class="secondary-button">Відкрити</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7">Звернень немає.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include 'inventory/_pagination.html' %}
+</section>
+{% endblock %}
