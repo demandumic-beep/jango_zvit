@@ -1,0 +1,123 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}StockLogix{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'inventory/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'inventory/css/extra.css' %}">
+</head>
+<body>
+    <div class="app">
+        <aside class="sidebar">
+            <a href="{% url 'dashboard' %}" class="brand">
+                <span class="brand-icon">S</span>
+                <span>Stock<span class="brand-light">Logix</span></span>
+            </a>
+
+            <div class="menu-label">ГОЛОВНЕ МЕНЮ</div>
+
+            <nav class="navigation">
+                <a href="{% url 'dashboard' %}"
+                   class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">
+                    <span>▦</span> Головна
+                </a>
+
+                <a href="{% url 'products' %}"
+                   class="nav-link {% if active_page == 'products' %}active{% endif %}">
+                    <span>▤</span> Товари
+                </a>
+
+                <a href="{% url 'manage_table' 'categories' %}"
+                   class="nav-link {% if active_page == 'categories' %}active{% endif %}">
+                    <span>▧</span> Категорії
+                </a>
+
+                <a href="{% url 'manage_table' 'warehouses' %}"
+                   class="nav-link {% if active_page == 'warehouses' %}active{% endif %}">
+                    <span>▥</span> Склади
+                </a>
+
+                <a href="{% url 'manage_stock' %}"
+                   class="nav-link {% if active_page == 'warehouse_products' %}active{% endif %}">
+                    <span>▦</span> Складські залишки
+                </a>
+
+                <a href="{% url 'customers_list' %}"
+                   class="nav-link {% if active_page == 'customers' or active_page == 'clients' %}active{% endif %}">
+                    <span>♙</span> Клієнти
+                </a>
+
+                <a href="{% url 'support_list' %}"
+                   class="nav-link {% if active_page == 'support' %}active{% endif %}">
+                    <span>✉</span> Підтримка
+                </a>
+
+                <a href="{% url 'orders_list' %}"
+                   class="nav-link {% if active_page == 'orders' %}active{% endif %}">
+                    <span>▣</span> Замовлення
+                </a>
+
+                <a href="{% url 'manage_table' 'order_items' %}"
+                   class="nav-link {% if active_page == 'order_items' %}active{% endif %}">
+                    <span>☷</span> Товари в замовленнях
+                </a>
+
+                <a href="{% url 'manage_table' 'deliveries' %}"
+                   class="nav-link {% if active_page == 'deliveries' %}active{% endif %}">
+                    <span>⇄</span> Доставки
+                </a>
+
+                <a href="{% url 'shop' %}" class="nav-link">
+                    <span>⌂</span> Вигляд клієнта ↗
+                </a>
+
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="nav-link logout-btn"><span>⏻</span> Вийти</button>
+                </form>
+            </nav>
+
+            <div class="sidebar-bottom">
+                <div class="profile-avatar">А</div>
+                <div class="profile-info">
+                    <strong>{% firstof request.user.username 'Адміністратор' %}</strong>
+                    <span>Керування системою</span>
+                </div>
+                <span class="profile-dots">•••</span>
+            </div>
+        </aside>
+
+        <main class="main">
+            <header class="topbar">
+                <div>
+                    <span class="topbar-caption">СИСТЕМА УПРАВЛІННЯ</span>
+                    <div class="topbar-title">Панель керування</div>
+                </div>
+
+                <div class="topbar-right">
+                    <span class="status-dot"></span>
+                    <span class="online-text">Система активна</span>
+                    <div class="topbar-avatar">А</div>
+                </div>
+            </header>
+
+            <section class="page-content">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="message {{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+
+                {% block content %}{% endblock %}
+            </section>
+
+            <footer class="footer">
+                <span>© 2026 StockLogix</span>
+                <span>Система управління складом і доставкою</span>
+            </footer>
+        </main>
+    </div>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{% if pager.pages > 1 %}
+<div class="pagination">
+    {% if pager.has_prev %}
+        <a class="secondary-button"
+           href="?page={{ pager.prev }}{% if search %}&q={{ search|urlencode }}{% endif %}">← Назад</a>
+    {% endif %}
+    <span class="muted">Сторінка {{ pager.page }} з {{ pager.pages }}</span>
+    {% if pager.has_next %}
+        <a class="secondary-button"
+           href="?page={{ pager.next }}{% if search %}&q={{ search|urlencode }}{% endif %}">Далі →</a>
+    {% endif %}
+</div>
+{% endif %}
