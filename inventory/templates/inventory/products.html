@@ -1,0 +1,115 @@
+{% extends 'inventory/base.html' %}
+{% load custom_filters %}
+
+{% block title %}Товари | StockLogix{% endblock %}
+
+{% block content %}
+<div class="welcome-row">
+    <div>
+        <div class="eyebrow">ГОЛОВНЕ / ТОВАРИ</div>
+        <h1>Каталог товарів</h1>
+        <p class="page-description">Перегляд товарів і контроль складських залишків.</p>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <div class="date-badge">Усього в результатах: {{ total_products }}</div>
+        <a href="{% url 'add_product' %}" class="primary-button">+ Додати товар</a>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-top">Товари в результатах</div>
+        <div class="stat-number">{{ total_products }}</div>
+        <div class="stat-note">За поточним пошуком</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-top">Малий запас</div>
+        <div class="stat-number">{{ low_stock }}</div>
+        <div class="stat-note">Потрібна увага</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-top">Немає в наявності</div>
+        <div class="stat-number">{{ out_of_stock }}</div>
+        <div class="stat-note">Залишок дорівнює нулю</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-top">Одиниць на складах</div>
+        <div class="stat-number">{{ total_units }}</div>
+        <div class="stat-note">У вибраних товарах</div>
+    </div>
+</div>
+
+<section class="panel">
+    <div class="panel-heading">
+        <div>
+            <h2>Список товарів</h2>
+            <p>Знайди товар за назвою, категорією або кодом.</p>
+        </div>
+    </div>
+
+    <form method="get" class="search-form">
+        <input type="search" name="q" value="{{ search }}"
+               placeholder="Наприклад, Logitech або 5">
+        <button type="submit" class="primary-button">Знайти</button>
+        {% if search %}
+        <a href="{% url 'products' %}" class="secondary-button">Очистити</a>
+        {% endif %}
+    </form>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>КОД</th>
+                    <th>ФОТО</th>
+                    <th>НАЗВА ТОВАРУ</th>
+                    <th>КАТЕГОРІЯ</th>
+                    <th>ЦІНА</th>
+                    <th>ЗАЛИШОК</th>
+                    <th>СТАТУС</th>
+                    <th>ДІЇ</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td><strong>{{ item.id }}</strong></td>
+                    <td><img class="thumb" src="{{ item.image|image_url }}" alt=""></td>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.category }}</td>
+                    <td>{{ item.price }} ₴</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>
+                        {% if item.quantity == 0 %}
+                        <span class="badge pending">Немає</span>
+                        {% elif item.quantity <= 5 %}
+                        <span class="badge processing">Мало товару</span>
+                        {% else %}
+                        <span class="badge delivered">У наявності</span>
+                        {% endif %}
+                    </td>
+                    <td class="table-actions">
+                        <a href="{% url 'edit_product' item.id %}" class="secondary-button">Редагувати</a>
+                        <form method="post"
+                              action="{% url 'delete_product' item.id %}"
+                              onsubmit="return confirm('Видалити цей товар?')">
+                            {% csrf_token %}
+                            <button type="submit" class="danger-button">Видалити</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8">За цим запитом товарів не знайдено.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Додавання товару | StockLogix{% endblock %}
+
+{% block content %}
+<div class="welcome-row">
+    <div>
+        <div class="eyebrow">КАТАЛОГ / НОВИЙ ТОВАР</div>
+        <h1>Додати товар</h1>
+        <p class="page-description">Заповни дані нового товару.</p>
+    </div>
+</div>
+
+<section class="panel">
+    <form method="post" enctype="multipart/form-data" class="search-form" style="display:grid;gap:16px">
+        {% csrf_token %}
+
+        <label>Назва товару
+            <input type="text" name="name" maxlength="150"
+                   value="{{ posted.name|default:'' }}" required>
+        </label>
+
+        <label>Категорія
+            <select name="category_id" required>
+                <option value="">Оберіть категорію</option>
+                {% for category in categories %}
+                    <option value="{{ category.0 }}"
+                        {% if posted.category_id == category.0|stringformat:"s" %}selected{% endif %}>
+                        {{ category.1 }}
+                    </option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <label>Опис
+            <textarea name="description" maxlength="255">{{ posted.description|default:'' }}</textarea>
+        </label>
+
+        <label>Ціна, грн
+            <input type="number" name="price" min="0" step="0.01"
+                   value="{{ posted.price|default:'' }}" required>
+        </label>
+
+        {% if has_image %}
+        <label>Фото товару (з комп'ютера: JPG, PNG, WEBP або GIF, до 5 МБ)
+            <input type="file" name="image_file" id="image_file"
+                   accept="image/jpeg,image/png,image/webp,image/gif">
+            <img id="photo_preview" alt="" hidden
+                 style="max-width:240px;max-height:180px;border-radius:12px;margin-top:10px;object-fit:cover">
+        </label>
+        {% endif %}
+
+        <button type="submit" class="primary-button">Додати товар</button>
+        <a href="{% url 'products' %}" class="secondary-button">Скасувати</a>
+    </form>
+</section>
+
+<script>
+    (function () {
+        var input = document.getElementById('image_file');
+        var preview = document.getElementById('photo_preview');
+        if (!input || !preview) { return; }
+        input.addEventListener('change', function () {
+            var file = input.files && input.files[0];
+            if (!file) { preview.hidden = true; return; }
+            preview.src = URL.createObjectURL(file);
+            preview.hidden = false;
+        });
+    })();
+</script>
+{% endblock %}
