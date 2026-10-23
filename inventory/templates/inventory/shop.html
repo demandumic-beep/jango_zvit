@@ -1,0 +1,184 @@
+{% load static custom_filters %}<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Магазин | StockLogix</title>
+    <link rel="stylesheet" href="{% static 'inventory/css/shop.css' %}">
+</head>
+<body>
+{% include 'inventory/_shop_header.html' with show_search=True page='catalog' %}
+
+<main class="shop-main">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="shop-message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <section class="shop-hero">
+        <h1>Каталог товарів</h1>
+        <p>Оберіть товар, натисніть «Замовити» й заповніть коротку форму. Доставимо зі складу найближчим часом.</p>
+    </section>
+
+    <nav class="chips">
+        <a href="{% url 'shop' %}{% if search %}?q={{ search|urlencode }}{% endif %}"
+           class="chip {% if not category %}active{% endif %}">Усі</a>
+        {% for c in categories %}
+            <a href="?category={{ c.id }}{% if search %}&q={{ search|urlencode }}{% endif %}"
+               class="chip {% if category == c.id|stringformat:'s' %}active{% endif %}">{{ c.name }}</a>
+        {% endfor %}
+    </nav>
+
+    <section class="grid">
+        {% for g in goods %}
+        <article class="card">
+            <div class="card-photo">
+                <img src="{{ g.image|image_url }}" alt="{{ g.name }}" loading="lazy">
+            </div>
+            <div class="card-body">
+                <span class="card-category">{{ g.category }}</span>
+                <h2>{{ g.name }}</h2>
+                <p class="card-desc">{{ g.description }}</p>
+                <div class="card-bottom">
+                    <div>
+                        <div class="card-price">{{ g.price }} ₴</div>
+                        {% if g.stock == 0 %}
+                            <div class="stock out">Немає в наявності</div>
+                        {% elif g.stock <= 5 %}
+                            <div class="stock low">Залишилось {{ g.stock }} шт.</div>
+                        {% else %}
+                            <div class="stock ok">В наявності</div>
+                        {% endif %}
+                    </div>
+                    <button type="button" class="buy-btn"
+                            data-id="{{ g.id }}"
+                            data-name="{{ g.name }}"
+                            data-price="{{ g.price|stringformat:'s' }}"
+                            data-stock="{{ g.stock }}"
+                            {% if g.stock == 0 %}disabled{% endif %}>Замовити</button>
+                </div>
+            </div>
+        </article>
+        {% empty %}
+        <p class="empty">За цим запитом товарів не знайдено.</p>
+        {% endfor %}
+    </section>
+</main>
+
+<footer class="shop-footer">© 2026 StockLogix · Система управління складом і доставкою</footer>
+
+<!-- Вікно реєстрації та оформлення замовлення -->
+<div class="modal" id="order-modal" aria-hidden="true">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <button type="button" class="modal-close" id="modal-close" aria-label="Закрити">✕</button>
+        <h2 id="modal-title">Оформлення замовлення</h2>
+        <p class="modal-product">
+            <strong id="m-name"></strong> — <span id="m-price"></span> ₴
+        </p>
+        {% if client %}
+            <p class="modal-hint">Ми впізнали вас: <strong>{{ client.name }}</strong>. Перевірте дані й підтвердьте.</p>
+        {% else %}
+            <p class="modal-hint">Заповніть дані для реєстрації — це займе хвилину, і наступного разу все буде вже введено.</p>
+        {% endif %}
+
+        <form method="post" action="{% url 'shop_order' %}" id="order-form">
+            {% csrf_token %}
+            <input type="hidden" name="product_id" id="m-id" value="{{ posted.product_id|default:'' }}">
+
+            <label>ПІБ
+                <input type="text" name="full_name" maxlength="150" required
+                       value="{% if posted %}{{ posted.full_name }}{% else %}{{ client.name }}{% endif %}">
+            </label>
+            <div class="row">
+                <label>Телефон
+                    <input type="tel" name="phone" placeholder="+380XXXXXXXXX" required
+                           value="{% if posted %}{{ posted.phone }}{% else %}{{ client.phone }}{% endif %}">
+                </label>
+                <label>Електронна пошта
+                    <input type="email" name="email"
+                           value="{% if posted %}{{ posted.email }}{% else %}{{ client.email }}{% endif %}">
+                </label>
+            </div>
+            <div class="row">
+                <label>Кількість
+                    <input type="number" name="quantity" id="m-qty" min="1" max="99" required
+                           value="{{ posted.quantity|default:'1' }}">
+                </label>
+                <label>Спосіб доставки
+                    <select name="delivery_method" id="m-method">
+                        {% for key, name, days in methods %}
+                            <option value="{{ key }}" data-address="{% if key != 'pickup' %}1{% endif %}"
+                                {% if posted.delivery_method == key %}selected{% endif %}>
+                                {{ name }}{% if days %} (≈ {{ days }} дн.){% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </label>
+            </div>
+            <label id="m-address-wrap">Адреса доставки
+                <textarea name="delivery_address" id="m-address" rows="2"
+                          placeholder="Місто, вулиця, будинок / відділення пошти">{% if posted %}{{ posted.delivery_address }}{% else %}{{ client.address }}{% endif %}</textarea>
+            </label>
+
+            <div class="modal-total">Разом: <strong id="m-total">0</strong> ₴</div>
+            <button type="submit" class="submit-btn">Підтвердити замовлення</button>
+        </form>
+    </div>
+</div>
+
+<script>
+(function () {
+    const modal = document.getElementById('order-modal');
+    const idInput = document.getElementById('m-id');
+    const qty = document.getElementById('m-qty');
+    const method = document.getElementById('m-method');
+    const addressWrap = document.getElementById('m-address-wrap');
+    const address = document.getElementById('m-address');
+    let price = 0;
+
+    function recalc() {
+        const q = parseInt(qty.value, 10) || 0;
+        document.getElementById('m-total').textContent = (price * q).toFixed(2);
+    }
+
+    function toggleAddress() {
+        const needed = method.selectedOptions[0].dataset.address === '1';
+        addressWrap.style.display = needed ? '' : 'none';
+        address.required = needed;
+    }
+
+    function openFor(btn) {
+        idInput.value = btn.dataset.id;
+        document.getElementById('m-name').textContent = btn.dataset.name;
+        document.getElementById('m-price').textContent = btn.dataset.price;
+        price = parseFloat(btn.dataset.price) || 0;
+        qty.max = Math.min(99, parseInt(btn.dataset.stock, 10) || 99);
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+        toggleAddress();
+        recalc();
+    }
+
+    function close() {
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    document.querySelectorAll('.buy-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () { openFor(btn); });
+    });
+    document.getElementById('modal-close').addEventListener('click', close);
+    modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+    qty.addEventListener('input', recalc);
+    method.addEventListener('change', toggleAddress);
+
+    {% if open_product %}
+    const preset = document.querySelector('.buy-btn[data-id="{{ open_product|escapejs }}"]');
+    if (preset) { openFor(preset); }
+    {% endif %}
+})();
+</script>
+</body>
+</html>

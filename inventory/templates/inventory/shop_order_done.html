@@ -1,0 +1,55 @@
+{% load static %}<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Замовлення оформлено | StockLogix</title>
+    <link rel="stylesheet" href="{% static 'inventory/css/shop.css' %}">
+</head>
+<body>
+{% include 'inventory/_shop_header.html' with page='orders' %}
+
+<main class="shop-main done">
+    {% if is_new %}
+    <div class="done-icon">✓</div>
+    <h1>Дякуємо, {{ client.name }}!</h1>
+    {% else %}
+    <h1>Замовлення №{{ order.0 }}</h1>
+    {% endif %}
+    <p class="muted">Замовлення №{{ order.0 }} оформлено {{ order.2|date:"d.m.Y H:i" }}. Статус: <strong>{{ order.3 }}</strong>.</p>
+
+    <section class="done-card">
+        <h2>Ваше замовлення</h2>
+        <table>
+            <thead><tr><th>Товар</th><th>К-сть</th><th>Ціна</th><th>Сума</th></tr></thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.0 }}</td>
+                    <td>{{ item.1 }}</td>
+                    <td>{{ item.2 }} ₴</td>
+                    <td>{{ item.3 }} ₴</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="modal-total">Разом до сплати: <strong>{{ order.4 }} ₴</strong></div>
+    </section>
+
+    {% if delivery %}
+    <section class="done-card">
+        <h2>Доставка</h2>
+        <dl>
+            <dt>Спосіб</dt><dd>{{ delivery.1 }}</dd>
+            <dt>Адреса</dt><dd>{{ delivery.0 }}</dd>
+            <dt>Трек-номер</dt><dd><strong>{{ delivery.2 }}</strong></dd>
+            <dt>Статус</dt><dd>{{ delivery.3 }}</dd>
+            <dt>Орієнтовна дата</dt><dd>{{ delivery.4|date:"d.m.Y" }}</dd>
+        </dl>
+    </section>
+    {% endif %}
+
+    <p><a href="{% url 'my_orders' %}" class="submit-btn link">Усі мої замовлення</a> <a href="{% url 'shop' %}" class="submit-btn link">До каталогу</a></p>
+</main>
+</body>
+</html>

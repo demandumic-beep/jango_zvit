@@ -1,0 +1,95 @@
+{% load static %}<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Підтримка | StockLogix</title>
+    <link rel="stylesheet" href="{% static 'inventory/css/shop.css' %}">
+</head>
+<body>
+{% include 'inventory/_shop_header.html' %}
+
+<main class="shop-main narrow">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="shop-message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <h1>Підтримка</h1>
+    <p class="muted">Опишіть проблему або скаргу. Відповідь з'явиться на цій сторінці.</p>
+
+    <section class="done-card">
+        <h2>Нове звернення</h2>
+        <form method="post" class="form-card">
+            {% csrf_token %}
+
+            {% if not client %}
+            <p class="muted">Ми ще не знаємо вас, тому вкажіть контакти.</p>
+            <label>ПІБ
+                <input type="text" name="full_name" maxlength="150" required value="{{ posted.full_name|default:'' }}">
+            </label>
+            <div class="row">
+                <label>Телефон
+                    <input type="tel" name="phone" placeholder="+380XXXXXXXXX" required value="{{ posted.phone|default:'' }}">
+                </label>
+                <label>Електронна пошта
+                    <input type="email" name="email" value="{{ posted.email|default:'' }}">
+                </label>
+            </div>
+            {% endif %}
+
+            <label>Тема
+                <input type="text" name="subject" maxlength="150" required value="{{ posted.subject|default:'' }}">
+            </label>
+
+            {% if orders %}
+            <label>Стосується замовлення (необов'язково)
+                <select name="order_id">
+                    <option value="">— не стосується —</option>
+                    {% for o in orders %}
+                        <option value="{{ o.id }}"
+                            {% if posted.order_id == o.id|stringformat:"s" %}selected{% endif %}>
+                            №{{ o.id }} від {{ o.date|date:"d.m.Y" }} на {{ o.total }} ₴
+                        </option>
+                    {% endfor %}
+                </select>
+            </label>
+            {% endif %}
+
+            <label>Повідомлення
+                <textarea name="message" rows="5" maxlength="2000" required>{{ posted.message|default:'' }}</textarea>
+            </label>
+            <button type="submit" class="submit-btn">Надіслати</button>
+        </form>
+    </section>
+
+    {% if client %}
+    <h2>Мої звернення</h2>
+    {% for t in tickets %}
+    <article class="ticket">
+        <div class="ticket-head">
+            <strong>#{{ t.id }} · {{ t.subject }}</strong>
+            <span class="badge {{ t.badge }}">{{ t.status }}</span>
+        </div>
+        <div class="muted small">
+            {{ t.created|date:"d.m.Y H:i" }}{% if t.order_id %} · замовлення №{{ t.order_id }}{% endif %}
+        </div>
+        <p>{{ t.message|linebreaksbr }}</p>
+        {% if t.reply %}
+        <div class="reply">
+            <strong>Відповідь підтримки</strong>
+            <span class="muted small">{{ t.replied|date:"d.m.Y H:i" }}</span>
+            <p>{{ t.reply|linebreaksbr }}</p>
+        </div>
+        {% else %}
+        <div class="muted small">Відповіді ще немає.</div>
+        {% endif %}
+    </article>
+    {% empty %}
+    <p class="muted">Звернень поки немає.</p>
+    {% endfor %}
+    {% endif %}
+</main>
+</body>
+</html>

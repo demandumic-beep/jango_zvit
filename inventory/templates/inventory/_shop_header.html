@@ -1,0 +1,51 @@
+{% if is_staff %}
+<div class="preview-bar">
+    {% if preview %}
+        <span>Режим перегляду: ви бачите сайт очима клієнта <strong>{{ client.name }}</strong>.</span>
+        <form method="post" action="{% url 'preview_exit' %}">
+            {% csrf_token %}
+            <button type="submit">← Повернутися в адмін-панель</button>
+        </form>
+    {% else %}
+        <span>Ви увійшли як адміністратор.</span>
+        <a href="{% url 'dashboard' %}">Адмін-панель</a>
+        {% if preview_clients %}
+        <form method="post" action="{% url 'preview_as' %}">
+            {% csrf_token %}
+            <select name="client_id" required>
+                <option value="">Переглянути як клієнт…</option>
+                {% for c in preview_clients %}
+                    <option value="{{ c.id }}">{{ c.name }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit">Перейти</button>
+        </form>
+        {% endif %}
+    {% endif %}
+</div>
+{% endif %}
+
+<header class="shop-header">
+    <a href="{% url 'shop' %}" class="shop-brand">
+        <span class="shop-logo">S</span> Stock<span>Logix</span>
+    </a>
+
+    <nav class="shop-nav">
+        <a href="{% url 'shop' %}" class="{% if page == 'catalog' %}active{% endif %}">Каталог</a>
+        <a href="{% url 'my_orders' %}" class="{% if page == 'orders' %}active{% endif %}">Мої замовлення</a>
+        <a href="{% url 'my_support' %}" class="{% if page == 'support' %}active{% endif %}">Підтримка</a>
+    </nav>
+
+    {% if show_search %}
+    <form method="get" class="shop-search">
+        <input type="search" name="q" value="{{ search }}" placeholder="Пошук товарів...">
+        {% if category %}<input type="hidden" name="category" value="{{ category }}">{% endif %}
+        <button type="submit">Знайти</button>
+    </form>
+    {% endif %}
+
+    <div class="shop-user">
+        {% if client %}<span>{{ client.name }}</span>{% endif %}
+        {% if not is_staff %}<a href="{% url 'login' %}" class="shop-admin">Вхід для співробітників</a>{% endif %}
+    </div>
+</header>

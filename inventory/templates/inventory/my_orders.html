@@ -1,0 +1,53 @@
+{% load static %}<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мої замовлення | StockLogix</title>
+    <link rel="stylesheet" href="{% static 'inventory/css/shop.css' %}">
+</head>
+<body>
+{% include 'inventory/_shop_header.html' %}
+
+<main class="shop-main narrow">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="shop-message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <h1>Мої замовлення</h1>
+
+    {% if not client %}
+        <div class="done-card">
+            <p>Замовлень поки немає: ви ще нічого не оформлювали з цього пристрою.</p>
+            <p><a href="{% url 'shop' %}" class="submit-btn link">Перейти до каталогу</a></p>
+        </div>
+    {% else %}
+        <div class="done-card">
+            <table>
+                <thead>
+                    <tr><th>№</th><th>Дата</th><th>Сума</th><th>Статус</th><th>Доставка</th><th>Трек-номер</th><th></th></tr>
+                </thead>
+                <tbody>
+                    {% for o in orders %}
+                    <tr>
+                        <td><strong>#{{ o.id }}</strong></td>
+                        <td>{{ o.date|date:"d.m.Y" }}</td>
+                        <td>{{ o.total }} ₴</td>
+                        <td><span class="badge {{ o.badge }}">{{ o.status }}</span></td>
+                        <td>{{ o.delivery }}</td>
+                        <td>{{ o.tracking }}</td>
+                        <td><a href="{% url 'shop_order_done' o.id %}" class="link-accent">Деталі</a></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7">У вас ще немає замовлень.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="muted">Є питання по замовленню? <a href="{% url 'my_support' %}" class="link-accent">Напишіть у підтримку</a>.</p>
+    {% endif %}
+</main>
+</body>
+</html>
