@@ -1,0 +1,89 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Складські залишки | StockLogix{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Складські залишки</h1>
+        <p class="muted">Контроль кількості товарів на складах</p>
+    </div>
+</div>
+
+<div class="panel record-form-panel">
+    <h2>Змінити кількість товару</h2>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="product_id">Товар</label>
+            <select id="product_id" name="product_id" required>
+                <option value="">Оберіть товар</option>
+                {% for product in products %}
+                    <option value="{{ product.0 }}">
+                        {{ product.1 }} — {{ product.2 }} грн (всього {{ product.3 }} шт.)
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="warehouse_id">Склад</label>
+            <select id="warehouse_id" name="warehouse_id" required>
+                <option value="">Оберіть склад</option>
+                {% for warehouse in warehouses %}
+                    <option value="{{ warehouse.0 }}">
+                        {{ warehouse.1 }}{% if warehouse.2 %} — {{ warehouse.2 }}{% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="quantity">Кількість одиниць на цьому складі</label>
+            <input id="quantity" type="number" name="quantity" min="0" step="1" required>
+        </div>
+
+        <button type="submit" class="primary-button">Зберегти залишок</button>
+    </form>
+</div>
+
+<div class="panel">
+    <h2>Поточні залишки</h2>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Склад</th>
+                    <th>Товар</th>
+                    <th>Кількість</th>
+                    <th>Дії</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in stock_records %}
+                <tr>
+                    <td>{{ record.3 }}</td>
+                    <td>{{ record.2 }}</td>
+                    <td>{{ record.4 }} шт.</td>
+                    <td class="table-actions">
+                        <form method="post"
+                              action="{% url 'stock_delete' record.0 record.1 %}"
+                              onsubmit="return confirm('Видалити запис залишку?');">
+                            {% csrf_token %}
+                            <button type="submit" class="danger-button">Видалити</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">Складських залишків поки немає.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
