@@ -1,0 +1,145 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Огляд системи | StockLogix{% endblock %}
+
+{% block content %}
+<div class="welcome-row">
+    <div>
+        <div class="eyebrow">ГОЛОВНА / ОГЛЯД</div>
+        <h1>Огляд системи</h1>
+        <p class="page-description">
+            Уся важлива інформація про склад і замовлення в одному місці.
+        </p>
+    </div>
+    <div class="date-badge">● Операційна панель</div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-top">
+            <span>Усього товарів</span>
+            <span class="stat-icon purple">▤</span>
+        </div>
+        <div class="stat-number">{{ products_count }}</div>
+        <div class="stat-note">Товарів у системі</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-top">
+            <span>Активні замовлення</span>
+            <span class="stat-icon blue">▣</span>
+        </div>
+        <div class="stat-number">{{ active_orders }}</div>
+        <div class="stat-note">Замовлень в обробці</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-top">
+            <span>Очікують доставки</span>
+            <span class="stat-icon orange">⇢</span>
+        </div>
+        <div class="stat-number">{{ pending_deliveries }}</div>
+        <div class="stat-note">Потребують уваги</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-top">
+            <span>Клієнти</span>
+            <span class="stat-icon green">♙</span>
+        </div>
+        <div class="stat-number">{{ clients_count }}</div>
+        <div class="stat-note">Зареєстрованих клієнтів</div>
+    </div>
+</div>
+
+<div class="content-grid">
+    <section class="panel orders-panel">
+        <div class="panel-heading">
+            <div>
+                <h2>Останні замовлення</h2>
+                <p>Список останніх операцій системи</p>
+            </div>
+            <a href="{% url 'orders_list' %}" class="text-link">Усі замовлення ↗</a>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ЗАМОВЛЕННЯ</th>
+                        <th>КЛІЄНТ</th>
+                        <th>СУМА</th>
+                        <th>СТАТУС</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in recent_orders %}
+                    <tr>
+                        <td><a href="{% url 'order_detail' order.id %}"><strong>#{{ order.id }}</strong></a></td>
+                        <td>{{ order.client }}</td>
+                        <td>{{ order.total }} ₴</td>
+                        <td><span class="badge {{ order.badge }}">{{ order.status }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4">Замовлень поки немає.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="panel stock-panel">
+        <div class="panel-heading">
+            <div>
+                <h2>Стан запасів</h2>
+                <p>Розподіл товарів за наявністю</p>
+            </div>
+            <span class="stock-symbol">◉</span>
+        </div>
+
+        <div class="stock-summary">
+            <div class="stock-total">{{ units }}</div>
+            <span>одиниць товару</span>
+        </div>
+
+        <div class="stock-bar">
+            <div class="bar-normal" data-w="{{ normal_pct }}"></div>
+            <div class="bar-low" data-w="{{ low_pct }}"></div>
+            <div class="bar-empty" data-w="{{ empty_pct }}"></div>
+        </div>
+        <script>
+            document.querySelectorAll('.stock-bar [data-w]').forEach(function (el) {
+                el.style.width = el.dataset.w + '%';
+            });
+        </script>
+
+        <div class="stock-legend">
+            <div>
+                <span class="legend-dot normal"></span>
+                <span>У наявності</span>
+                <strong>{{ normal_pct }}%</strong>
+            </div>
+            <div>
+                <span class="legend-dot low"></span>
+                <span>Мало товару</span>
+                <strong>{{ low_pct }}%</strong>
+            </div>
+            <div>
+                <span class="legend-dot empty"></span>
+                <span>Немає запасів</span>
+                <strong>{{ empty_pct }}%</strong>
+            </div>
+        </div>
+
+        {% if need_restock %}
+        <div class="stock-notice">
+            <span>!</span>
+            <div>
+                <strong>Зверни увагу</strong>
+                <p>Товарів, що потребують поповнення: {{ need_restock }}.</p>
+            </div>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
