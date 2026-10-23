@@ -1,0 +1,107 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Нове замовлення | StockLogix{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Нове замовлення</h1>
+        <p class="muted">Товар автоматично списується зі складів (спершу з тих, де його більше).</p>
+    </div>
+    <a href="{% url 'orders_list' %}" class="secondary-button">Назад</a>
+</div>
+
+<div class="panel record-form-panel">
+    <form method="post" id="order-form">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="client_id">Клієнт</label>
+            <select id="client_id" name="client_id" required>
+                <option value="">Оберіть клієнта</option>
+                {% for c in clients %}
+                    <option value="{{ c.id }}"
+                        {% if posted_client == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <h3>Товари</h3>
+        <div id="lines">
+            {% for line in lines %}
+            <div class="order-line">
+                <select name="product_id" required>
+                    <option value="">Оберіть товар</option>
+                    {% for p in products %}
+                        <option value="{{ p.id }}" data-price="{{ p.price|stringformat:'s' }}"
+                            {% if line.product_id == p.id|stringformat:"s" %}selected{% endif %}>
+                            {{ p.name }} — {{ p.price }} ₴ (є {{ p.stock }} шт.)
+                        </option>
+                    {% endfor %}
+                </select>
+                <input type="number" name="quantity" min="1" max="999" value="{{ line.quantity }}" required>
+                <button type="button" class="danger-button remove-line">✕</button>
+            </div>
+            {% endfor %}
+        </div>
+        <p><button type="button" class="secondary-button" id="add-line">+ Додати товар</button></p>
+        <p class="muted">Орієнтовна сума: <strong id="total">0</strong> ₴</p>
+
+        <h3>Доставка</h3>
+        <div class="form-group">
+            <label for="delivery_method">Спосіб доставки</label>
+            <select id="delivery_method" name="delivery_method">
+                {% for key, name in methods %}
+                    <option value="{{ key }}" {% if posted_method == key %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="delivery_address">Адреса доставки (для самовивозу не потрібна)</label>
+            <textarea id="delivery_address" name="delivery_address" rows="2">{{ posted_address }}</textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="primary-button">Створити замовлення</button>
+            <a href="{% url 'orders_list' %}" class="secondary-button">Скасувати</a>
+        </div>
+    </form>
+</div>
+
+<script>
+(function () {
+    const lines = document.getElementById('lines');
+    const totalEl = document.getElementById('total');
+
+    function recalc() {
+        let total = 0;
+        lines.querySelectorAll('.order-line').forEach(function (row) {
+            const opt = row.querySelector('select').selectedOptions[0];
+            const qty = parseInt(row.querySelector('input').value, 10) || 0;
+            const price = opt ? parseFloat(opt.dataset.price) || 0 : 0;
+            total += price * qty;
+        });
+        totalEl.textContent = total.toFixed(2);
+    }
+
+    document.getElementById('add-line').addEventListener('click', function () {
+        const clone = lines.querySelector('.order-line').cloneNode(true);
+        clone.querySelector('select').value = '';
+        clone.querySelector('input').value = 1;
+        lines.appendChild(clone);
+        recalc();
+    });
+
+    lines.addEventListener('click', function (e) {
+        if (e.target.classList.contains('remove-line') &&
+            lines.querySelectorAll('.order-line').length > 1) {
+            e.target.closest('.order-line').remove();
+            recalc();
+        }
+    });
+    lines.addEventListener('input', recalc);
+    lines.addEventListener('change', recalc);
+    recalc();
+})();
+</script>
+{% endblock %}

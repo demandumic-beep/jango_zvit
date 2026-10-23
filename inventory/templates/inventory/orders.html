@@ -1,0 +1,64 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Замовлення | StockLogix{% endblock %}
+
+{% block content %}
+<div class="welcome-row">
+    <div>
+        <div class="eyebrow">ГОЛОВНЕ / ЗАМОВЛЕННЯ</div>
+        <h1>Замовлення</h1>
+        <p class="page-description">Контроль клієнтських замовлень і їхніх статусів.</p>
+    </div>
+    <a href="{% url 'order_new' %}" class="primary-button">+ Нове замовлення</a>
+</div>
+
+<section class="panel">
+    <div class="panel-heading">
+        <div>
+            <h2>Усі замовлення</h2>
+            <p>Нові замовлення автоматично списують товар зі складів.</p>
+        </div>
+        <span class="date-badge">{{ total_records }} записів</span>
+    </div>
+
+    <form method="get" class="search-form">
+        <input type="search" name="q" value="{{ search }}"
+               placeholder="Номер, клієнт або статус">
+        <button type="submit" class="primary-button">Знайти</button>
+        {% if search %}
+        <a href="{% url 'orders_list' %}" class="secondary-button">Очистити</a>
+        {% endif %}
+    </form>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>НОМЕР</th>
+                    <th>КЛІЄНТ</th>
+                    <th>ДАТА</th>
+                    <th>СУМА</th>
+                    <th>СТАТУС</th>
+                    <th>ДІЇ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td><strong>#{{ order.id }}</strong></td>
+                    <td>{{ order.client }}</td>
+                    <td>{{ order.date|date:"d.m.Y H:i" }}</td>
+                    <td>{{ order.total }} ₴</td>
+                    <td><span class="badge {{ order.badge }}">{{ order.status }}</span></td>
+                    <td><a href="{% url 'order_detail' order.id %}" class="secondary-button">Деталі</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6">Замовлень поки немає.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include 'inventory/_pagination.html' %}
+</section>
+{% endblock %}

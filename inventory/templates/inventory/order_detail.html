@@ -1,0 +1,88 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Замовлення №{{ order.0 }} | StockLogix{% endblock %}
+
+{% block content %}
+<div class="welcome-row">
+    <div>
+        <div class="eyebrow">ЗАМОВЛЕННЯ / ДЕТАЛІ</div>
+        <h1>Замовлення №{{ order.0 }}</h1>
+        <p class="page-description">
+            {{ order.1|date:"d.m.Y H:i" }} · Клієнт: {{ order.5|default:"—" }}
+            {% if order.6 %}· {{ order.6 }}{% endif %}
+            {% if order.7 %}· {{ order.7 }}{% endif %}
+        </p>
+    </div>
+    <a href="{% url 'orders_list' %}" class="secondary-button">До списку</a>
+</div>
+
+<section class="panel">
+    <div class="panel-heading">
+        <div>
+            <h2>Статус замовлення</h2>
+            <p>Зміна статусу оновлює і статус доставки.</p>
+        </div>
+        <span class="badge {{ badge }}">{{ order.2 }}</span>
+    </div>
+
+    <form method="post" action="{% url 'order_set_status' order.0 %}" class="search-form">
+        {% csrf_token %}
+        <select name="status">
+            {% for s in statuses %}
+                <option value="{{ s }}" {% if s == order.2 %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="primary-button">Змінити статус</button>
+    </form>
+</section>
+
+<section class="panel">
+    <div class="panel-heading">
+        <div><h2>Товари в замовленні</h2></div>
+        <span class="date-badge">Разом: {{ order.3 }} ₴</span>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>ТОВАР</th><th>КІЛЬКІСТЬ</th><th>ЦІНА</th><th>СУМА</th></tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.1|default:"Товар видалено" }}</td>
+                    <td>{{ item.2 }}</td>
+                    <td>{{ item.3 }} ₴</td>
+                    <td>{{ item.4 }} ₴</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4">Позицій немає.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-heading"><div><h2>Доставка</h2></div></div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>АДРЕСА</th><th>СПОСІБ</th><th>ТРЕК-НОМЕР</th><th>СТАТУС</th><th>ДАТА</th></tr>
+            </thead>
+            <tbody>
+                {% for d in deliveries %}
+                <tr>
+                    <td>{{ d.0 }}</td>
+                    <td>{{ d.1|default:"—" }}</td>
+                    <td><strong>{{ d.2|default:"—" }}</strong></td>
+                    <td>{{ d.3 }}</td>
+                    <td>{{ d.4|date:"d.m.Y"|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5">Доставку не оформлено.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
