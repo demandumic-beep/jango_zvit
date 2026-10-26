@@ -9,6 +9,7 @@
     border: 1px solid #bfe8cf;
 }
 .message.error { background: #fdecec; color: #7f1d1d; border-color: #f5c2c2; }
+.message.warning { background: #fff7e0; color: #7a5200; border-color: #f0d9a0; }
 
 .page-header {
     display: flex;

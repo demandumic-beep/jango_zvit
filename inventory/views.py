@@ -15,6 +15,7 @@ from django.views.decorators.http import require_POST
 from django.urls import reverse
 
 from .access import CLIENT_COOKIE, PREVIEW_COOKIE, is_staff, staff_required
+from .notifications import send_order_status_email
 
 logger = logging.getLogger(__name__)
 
@@ -1238,9 +1239,11 @@ def order_set_status(request, order_id):
 
     with transaction.atomic():
         with connection.cursor() as cursor:
-            cursor.execute("SELECT 1 FROM orders WHERE order_id = %s", [order_id])
-            if not cursor.fetchone():
+            cursor.execute("SELECT status FROM orders WHERE order_id = %s", [order_id])
+            row = cursor.fetchone()
+            if not row:
                 raise Http404("Замовлення не знайдено")
+            old_status = row[0]
             cursor.execute(
                 "UPDATE orders SET status = %s WHERE order_id = %s",
                 [status, order_id],
@@ -1255,7 +1258,16 @@ def order_set_status(request, order_id):
                     "UPDATE deliveries SET status = %s WHERE order_id = %s",
                     [delivery_status, order_id],
                 )
-    messages.success(request, "Статус оновлено.")
+    if status == old_status:
+        messages.success(request, "Статус оновлено.")
+    elif send_order_status_email(order_id, status):
+        messages.success(request, "Статус оновлено, клієнту надіслано лист.")
+    else:
+        messages.warning(
+            request,
+            "Статус оновлено, але лист клієнту не надіслано "
+            "(немає пошти або помилка відправки).",
+        )
     return redirect("order_detail", order_id=order_id)
 
 
