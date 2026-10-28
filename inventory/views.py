@@ -122,8 +122,53 @@ def _text(value):
 
 def _schema(table):
     with connection.cursor() as cursor:
-        cursor.execute(f"SHOW COLUMNS FROM `{table}`")
-        return [tuple(_text(x) for x in row) for row in cursor.fetchall()]
+        description = connection.introspection.get_table_description(
+            cursor, table
+        )
+        constraints = connection.introspection.get_constraints(cursor, table)
+        sequences = {
+            sequence["column"]
+            for sequence in connection.introspection.get_sequences(cursor, table)
+        }
+
+    primary_keys = {
+        column
+        for constraint in constraints.values()
+        if constraint["primary_key"]
+        for column in constraint["columns"]
+    }
+    field_types = {
+        "AutoField": "int",
+        "BigAutoField": "bigint",
+        "SmallAutoField": "smallint",
+        "IntegerField": "int",
+        "BigIntegerField": "bigint",
+        "SmallIntegerField": "smallint",
+        "CharField": "varchar",
+        "TextField": "text",
+        "DecimalField": "decimal",
+        "FloatField": "float",
+        "DateTimeField": "timestamp",
+        "DateField": "date",
+        "TimeField": "time",
+        "BooleanField": "boolean",
+    }
+    return [
+        (
+            column.name,
+            field_types.get(
+                connection.introspection.get_field_type(
+                    column.type_code, column
+                ),
+                "text",
+            ),
+            column.null_ok,
+            "PRI" if column.name in primary_keys else "",
+            column.default,
+            "auto_increment" if column.name in sequences else "",
+        )
+        for column in description
+    ]
 
 
 def _visible_schema(table):
@@ -138,6 +183,10 @@ def _has_image_column():
             cursor, "products"
         )
     return any(column.name == "image" for column in columns)
+
+
+def _quote(name):
+    return connection.ops.quote_name(name)
 
 
 def _img(alias="p"):
@@ -235,9 +284,9 @@ def dashboard(request):
         cursor.execute(
             """
             SELECT COALESCE(SUM(q), 0),
-                   COALESCE(SUM(q > 5), 0),
-                   COALESCE(SUM(q BETWEEN 1 AND 5), 0),
-                   COALESCE(SUM(q = 0), 0),
+                   COALESCE(SUM(CASE WHEN q > 5 THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN q BETWEEN 1 AND 5 THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN q = 0 THEN 1 ELSE 0 END), 0),
                    COUNT(*)
             FROM (
                 SELECT p.product_id, COALESCE(SUM(wp.quantity), 0) AS q
@@ -285,7 +334,7 @@ def products(request):
     if search:
         sql += """
             WHERE p.name LIKE %s OR c.name LIKE %s
-            OR CAST(p.product_id AS CHAR) LIKE %s
+            OR CAST(p.product_id AS TEXT) LIKE %s
         """
         params = [f"%{search}%"] * 3
 
@@ -549,19 +598,20 @@ def manage_table(request, table):
     params = []
     if search:
         where = " WHERE " + " OR ".join(
-            f"CAST(`{col}` AS CHAR) LIKE %s" for col in columns
+            f"CAST({_quote(col)} AS TEXT) LIKE %s" for col in columns
         )
         params = [f"%{search}%"] * len(columns)
 
-    cols_sql = ", ".join(f"`{col}`" for col in columns)
-    order_by = f"`{pk}` DESC" if pk else f"`{columns[0]}`"
+    cols_sql = ", ".join(_quote(col) for col in columns)
+    order_by = f"{_quote(pk)} DESC" if pk else _quote(columns[0])
 
     with connection.cursor() as cursor:
-        cursor.execute(f"SELECT COUNT(*) FROM `{table}`{where}", params)
+        quoted_table = _quote(table)
+        cursor.execute(f"SELECT COUNT(*) FROM {quoted_table}{where}", params)
         total = cursor.fetchone()[0]
         pager = _pager(request, total)
         cursor.execute(
-            f"SELECT {cols_sql} FROM `{table}`{where} "
+            f"SELECT {cols_sql} FROM {quoted_table}{where} "
             f"ORDER BY {order_by} LIMIT %s OFFSET %s",
             params + [PAGE_SIZE, pager["offset"]],
         )
@@ -595,8 +645,8 @@ def add_record(request, table):
 def _fk_options(table, id_col, label_col):
     with connection.cursor() as cursor:
         cursor.execute(
-            f"SELECT `{id_col}`, `{label_col}` FROM `{table}` "
-            f"ORDER BY `{id_col}`"
+            f"SELECT {_quote(id_col)}, {_quote(label_col)} "
+            f"FROM {_quote(table)} ORDER BY {_quote(id_col)}"
         )
         rows = cursor.fetchall()
     options = []
@@ -717,7 +767,8 @@ def edit_record(request, table, record_id=None):
     if record_id is not None:
         with connection.cursor() as cursor:
             cursor.execute(
-                f"SELECT * FROM `{table}` WHERE `{primary_key}` = %s",
+                f"SELECT * FROM {_quote(table)} "
+                f"WHERE {_quote(primary_key)} = %s",
                 [record_id],
             )
             row = cursor.fetchone()
@@ -759,18 +810,20 @@ def edit_record(request, table, record_id=None):
                 with transaction.atomic():
                     with connection.cursor() as cursor:
                         if record_id is None:
-                            cols_sql = ", ".join(f"`{n}`" for n in values)
+                            cols_sql = ", ".join(_quote(n) for n in values)
                             marks = ", ".join(["%s"] * len(values))
                             cursor.execute(
-                                f"INSERT INTO `{table}` ({cols_sql}) "
+                                f"INSERT INTO {_quote(table)} ({cols_sql}) "
                                 f"VALUES ({marks})",
                                 list(values.values()),
                             )
                         else:
-                            assignments = ", ".join(f"`{n}` = %s" for n in values)
+                            assignments = ", ".join(
+                                f"{_quote(n)} = %s" for n in values
+                            )
                             cursor.execute(
-                                f"UPDATE `{table}` SET {assignments} "
-                                f"WHERE `{primary_key}` = %s",
+                                f"UPDATE {_quote(table)} SET {assignments} "
+                                f"WHERE {_quote(primary_key)} = %s",
                                 list(values.values()) + [record_id],
                             )
                 messages.success(request, "Зміни успішно збережено.")
@@ -811,7 +864,9 @@ def delete_record(request, table, record_id):
         with transaction.atomic():
             with connection.cursor() as cursor:
                 cursor.execute(
-                    f"DELETE FROM `{table}` WHERE `{pks[0]}` = %s", [record_id]
+                    f"DELETE FROM {_quote(table)} "
+                    f"WHERE {_quote(pks[0])} = %s",
+                    [record_id],
                 )
         messages.success(request, "Запис видалено.")
     except Exception:
@@ -854,7 +909,8 @@ def manage_stock(request):
                         INSERT INTO warehouse_products
                             (warehouse_id, product_id, quantity)
                         VALUES (%s, %s, %s)
-                        ON DUPLICATE KEY UPDATE quantity = VALUES(quantity)
+                        ON CONFLICT (warehouse_id, product_id)
+                        DO UPDATE SET quantity = EXCLUDED.quantity
                         """,
                         [warehouse_id, product_id, quantity],
                     )
@@ -942,10 +998,10 @@ def _find_or_create_client(cursor, name, phone, email, address):
         return row[0]
     cursor.execute(
         "INSERT INTO clients (full_name, phone, email, address) "
-        "VALUES (%s, %s, %s, %s)",
+        "VALUES (%s, %s, %s, %s) RETURNING client_id",
         [name, phone, email or None, address or None],
     )
-    return cursor.lastrowid
+    return cursor.fetchone()[0]
 
 
 def _allocate(cursor, product_id, quantity):
@@ -1005,10 +1061,10 @@ def _place_order(client_id, items, method_key, address):
 
             cursor.execute(
                 "INSERT INTO orders (client_id, order_date, status, total_amount) "
-                "VALUES (%s, NOW(), %s, 0)",
+                "VALUES (%s, NOW(), %s, 0) RETURNING order_id",
                 [client_id, "Очікує"],
             )
-            order_id = cursor.lastrowid
+            order_id = cursor.fetchone()[0]
             total = Decimal("0")
             pickup_point = None
 
@@ -1094,7 +1150,7 @@ def orders_list(request):
     where, params = "", []
     if search:
         where = (
-            " WHERE CAST(o.order_id AS CHAR) LIKE %s "
+            " WHERE CAST(o.order_id AS TEXT) LIKE %s "
             "OR c.full_name LIKE %s OR o.status LIKE %s"
         )
         params = [f"%{search}%"] * 3

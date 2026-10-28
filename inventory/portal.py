@@ -125,7 +125,7 @@ def customers_list(request):
     if search:
         where = (
             " WHERE c.full_name LIKE %s OR c.phone LIKE %s OR c.email LIKE %s "
-            "OR CAST(c.client_id AS CHAR) LIKE %s"
+            "OR CAST(c.client_id AS TEXT) LIKE %s"
         )
         where_params = [f"%{search}%"] * 4
 

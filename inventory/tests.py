@@ -1,9 +1,13 @@
+import os
 from types import SimpleNamespace
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
+from django.core.management import call_command
+from django.core.management.base import CommandError
+
 from inventory.portal import _support_ready
-from inventory.views import _has_image_column
+from inventory.views import _has_image_column, _schema
 
 
 class DatabaseIntrospectionTests(TestCase):
@@ -30,3 +34,53 @@ class DatabaseIntrospectionTests(TestCase):
 
         table_names_mock.return_value = ["products"]
         self.assertFalse(_support_ready())
+
+    @patch("inventory.views.connection.introspection.get_field_type")
+    @patch("inventory.views.connection.introspection.get_sequences")
+    @patch("inventory.views.connection.introspection.get_constraints")
+    @patch("inventory.views.connection.introspection.get_table_description")
+    @patch("inventory.views.connection.cursor")
+    def test_reads_postgresql_schema(
+        self,
+        cursor_mock,
+        description_mock,
+        constraints_mock,
+        sequences_mock,
+        field_type_mock,
+    ):
+        cursor_context = MagicMock()
+        cursor_context.__enter__.return_value = MagicMock()
+        cursor_mock.return_value = cursor_context
+        description_mock.return_value = [
+            SimpleNamespace(
+                name="product_id",
+                type_code=23,
+                null_ok=False,
+                default="nextval('products_product_id_seq'::regclass)",
+            )
+        ]
+        constraints_mock.return_value = {
+            "products_pkey": {
+                "primary_key": True,
+                "columns": ["product_id"],
+            }
+        }
+        sequences_mock.return_value = [{"column": "product_id"}]
+        field_type_mock.return_value = "AutoField"
+
+        self.assertEqual(
+            _schema("products"),
+            [(
+                "product_id",
+                "int",
+                False,
+                "PRI",
+                "nextval('products_product_id_seq'::regclass)",
+                "auto_increment",
+            )],
+        )
+
+    def test_admin_command_requires_password(self):
+        with patch.dict(os.environ, {"ADMIN_USERNAME": "render-admin"}, clear=True):
+            with self.assertRaises(CommandError):
+                call_command("ensure_admin")

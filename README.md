@@ -17,8 +17,8 @@ seed_demo.py, schema.sql           (у корінь)
 
 ## Запуск
 
-1. **База.** Нова: `mysql -u root -p < schema.sql`. Уже існуюча: `seed_demo.py` сам додасть колонку `products.image` і таблицю `support_tickets`.
-2. `pip install django mysqlclient`
+1. **База.** Цей Render-застосунок використовує PostgreSQL. Таблиці створює `python manage.py migrate`; початкові товари й залишки додає `python manage.py seed_demo`.
+2. `pip install -r requirements.txt`
 3. **`config/settings.py`** має містити:
    - `INSTALLED_APPS`: `inventory`, `django.contrib.auth`, `django.contrib.contenttypes`, `django.contrib.sessions`, `django.contrib.messages`, `django.contrib.staticfiles`;
    - `MIDDLEWARE`: `SessionMiddleware`, `AuthenticationMiddleware`, `MessageMiddleware`, `CsrfViewMiddleware` (у стандартному проєкті все це вже є);
@@ -26,8 +26,8 @@ seed_demo.py, schema.sql           (у корінь)
    - `DATABASES['default']`: MySQL (`django.db.backends.mysql`, `NAME: stocklogix`, `OPTIONS: {'charset': 'utf8mb4'}`).
 4. **`config/urls.py`:** `path('', include('inventory.urls'))`.
 5. `python manage.py migrate` (створює таблиці користувачів Django для входу адміна).
-6. `python manage.py createsuperuser`, це твій логін адміністратора.
-7. `python seed_demo.py`, потім `python manage.py runserver`.
+6. Локально створи адміністратора командою `python manage.py createsuperuser`; на Render акаунт створює `python manage.py ensure_admin` із `ADMIN_USERNAME` та `ADMIN_PASSWORD`.
+7. `python manage.py seed_demo`, потім `python manage.py runserver`.
 
 ## Ролі
 
@@ -52,10 +52,10 @@ seed_demo.py, schema.sql           (у корінь)
 pip install -r requirements.txt && python manage.py collectstatic --no-input
 ```
 
-У Render → **Settings → Start Command** вкажи:
+У Render → **Environment** додай `ADMIN_USERNAME`, `ADMIN_PASSWORD` і, за потреби, `ADMIN_EMAIL`. Пароль задай у Render, не зберігай його у Git. На **Settings → Start Command** вкажи:
 
 ```text
-python manage.py migrate --noinput && gunicorn config.wsgi:application
+python manage.py migrate --noinput && python manage.py seed_demo && python manage.py ensure_admin && gunicorn config.wsgi:application
 ```
 
-Те саме значення записане у `Procfile`. Після push змін запусти новий deploy і перевір у логах Render, що `migrate` завершився успішно **до** запуску Gunicorn. Міграція створює таблиці PostgreSQL, якщо їх ще немає, але не додає демонстраційні товари: створи категорії та товари в адмін-панелі. WhiteNoise віддає зібрані CSS та інші статичні файли в production.
+Ця команда записана також у `Procfile`. Після push змін запусти новий deploy і перевір у логах, що `migrate`, `seed_demo` та `ensure_admin` успішно завершилися до запуску Gunicorn. `seed_demo` додає 16 початкових товарів, категорії, склади й початкові залишки; повторний запуск не перезаписує наявні товари або кількості. `ensure_admin` створює або підтверджує staff/superuser-акаунт із заданими змінними середовища; входь на `/login/` саме з `ADMIN_USERNAME` та `ADMIN_PASSWORD` (Google-вхід сам собою не надає адміністративних прав). У production `DEBUG` за замовчуванням вимкнено; встанови `ALLOWED_HOSTS` із доменом Render та власними доменами. WhiteNoise віддає зібрані CSS та інші статичні файли.
