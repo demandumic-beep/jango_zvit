@@ -104,6 +104,8 @@ DATABASES = {
         'PORT': os.environ.get("DB_PORT", "3306"),
         'OPTIONS': {
             'charset': 'utf8mb4',
+            "ssl_verify_cert": True,
+            "ssl_verify_identity": True,
         },
     }
 }
