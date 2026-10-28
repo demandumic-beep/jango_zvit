@@ -85,8 +85,8 @@ HIDDEN_COLUMNS = {
     "orders": {"order_items_order_item_id", "deliveries_delivery_id"},
 }
 
-ORDER_STATUSES = ["Очікує", "В обробці", "Доставлено", "Скасовано"]
-DELIVERY_STATUSES = ["Очікує", "В дорозі", "Доставлено", "Скасовано"]
+ORDER_STATUSES = ["Очікує", "В обробці","Відправлено","Доставлено", "Скасовано"]
+DELIVERY_STATUSES = ["Очікує", "В дорозі","Відправлено","Доставлено", "Скасовано"]
 
 STATUS_CHOICES = {
     ("orders", "status"): ORDER_STATUSES,

@@ -860,3 +860,9 @@ td strong {
     min-width: 700px;
     width: 100%;
 }
+
+textarea,
+select,
+input[type="text"] {
+    color: #111827;
+} 

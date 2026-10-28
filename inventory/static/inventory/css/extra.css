@@ -81,3 +81,20 @@
     padding: 14px 16px; border-radius: 10px; background: #f6f7fc; border: 1px solid #e4e6f0;
     white-space: normal; line-height: 1.55;
 }
+
+
+.ticket-box {
+    color: #111827;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea,
+.order-line select,
+.order-line input {
+    color: #111827;
+}
+
+.filter-chips a {
+    color: #111827;
+}
