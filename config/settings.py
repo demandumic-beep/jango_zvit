@@ -97,11 +97,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'stocklogix_db',
-        'USER': 'root',
-        'PASSWORD': 'Da150910',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': os.environ.get("DB_NAME", "stocklogix"),
+        'USER': os.environ.get("DB_USER", "root"),
+        'PASSWORD': os.environ.get("DB_PASSWORD", ""),
+        'HOST': os.environ.get("DB_HOST", "localhost"),
+        'PORT': os.environ.get("DB_PORT", "3306"),
         'OPTIONS': {
             'charset': 'utf8mb4',
         },
