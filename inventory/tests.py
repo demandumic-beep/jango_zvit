@@ -5,9 +5,45 @@ from unittest.mock import MagicMock, patch
 
 from django.core.management import call_command
 from django.core.management.base import CommandError
+from django.test import SimpleTestCase, override_settings
 
 from inventory.portal import _support_ready
 from inventory.views import _has_image_column, _schema
+
+
+@override_settings(ALLOWED_HOSTS=["localhost"])
+class LoginPageTests(SimpleTestCase):
+    @override_settings(SOCIALACCOUNT_PROVIDERS={})
+    @patch(
+        "allauth.socialaccount.adapter.DefaultSocialAccountAdapter.get_app",
+        side_effect=AssertionError("Login page should not query Google app config"),
+    )
+    def test_staff_login_page_works_without_google_configuration(
+        self, get_app_mock
+    ):
+        response = self.client.get("/login/", HTTP_HOST="localhost")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Вхід")
+        self.assertNotContains(response, "Увійти через Google")
+        get_app_mock.assert_not_called()
+
+    @override_settings(
+        SOCIALACCOUNT_PROVIDERS={
+            "google": {
+                "APP": {
+                    "client_id": "test-client-id",
+                    "secret": "test-secret",
+                }
+            }
+        }
+    )
+    def test_google_button_uses_named_login_route(self):
+        response = self.client.get("/login/", HTTP_HOST="localhost")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'action="/accounts/google/login/"')
+        self.assertContains(response, "Увійти через Google")
 
 
 class DatabaseIntrospectionTests(TestCase):

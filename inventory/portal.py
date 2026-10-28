@@ -5,6 +5,7 @@
 """
 import logging
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.db import connection, transaction
@@ -73,7 +74,16 @@ def login_view(request):
             return redirect(next_url or "dashboard")
         error = "Невірний логін або пароль, або в цього акаунта немає прав адміністратора."
 
-    return render(request, "inventory/login.html", {"error": error, "next": next_url})
+    google_app = settings.SOCIALACCOUNT_PROVIDERS.get("google", {}).get(
+        "APP", {}
+    )
+    return render(request, "inventory/login.html", {
+        "error": error,
+        "next": next_url,
+        "google_login_enabled": bool(
+            google_app.get("client_id") and google_app.get("secret")
+        ),
+    })
 
 
 @require_POST
