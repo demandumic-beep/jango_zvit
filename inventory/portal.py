@@ -38,9 +38,7 @@ def _ticket_badge(status):
 
 
 def _support_ready():
-    with connection.cursor() as cursor:
-        cursor.execute("SHOW TABLES LIKE 'support_tickets'")
-        return cursor.fetchone() is not None
+    return "support_tickets" in connection.introspection.table_names()
 
 
 def _set_client_cookie(response, client_id):

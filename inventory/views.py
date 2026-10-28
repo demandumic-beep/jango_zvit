@@ -133,7 +133,11 @@ def _visible_schema(table):
 
 @lru_cache(maxsize=None)
 def _has_image_column():
-    return any(col[0] == "image" for col in _schema("products"))
+    with connection.cursor() as cursor:
+        columns = connection.introspection.get_table_description(
+            cursor, "products"
+        )
+    return any(column.name == "image" for column in columns)
 
 
 def _img(alias="p"):
