@@ -1,4 +1,5 @@
 Django==5.2.18
+whitenoise==6.9.0
 django-allauth==65.21.0
 gunicorn==21.2.0; sys_platform != "win32"
 psycopg2-binary==2.9.13
