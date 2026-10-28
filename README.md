@@ -52,10 +52,10 @@ seed_demo.py, schema.sql           (у корінь)
 pip install -r requirements.txt && python manage.py collectstatic --no-input
 ```
 
-Команда запуску вебсервісу:
+У Render → **Settings → Start Command** вкажи:
 
 ```text
-gunicorn config.wsgi:application
+python manage.py migrate --noinput && gunicorn config.wsgi:application
 ```
 
-WhiteNoise віддає зібрані CSS та інші статичні файли в production. Після зміни команди збірки виконай новий deploy.
+Те саме значення записане у `Procfile`. Після push змін запусти новий deploy і перевір у логах Render, що `migrate` завершився успішно **до** запуску Gunicorn. Міграція створює таблиці PostgreSQL, якщо їх ще немає, але не додає демонстраційні товари: створи категорії та товари в адмін-панелі. WhiteNoise віддає зібрані CSS та інші статичні файли в production.
