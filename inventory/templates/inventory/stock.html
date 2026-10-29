@@ -49,6 +49,42 @@
     </form>
 </div>
 
+{# Автопідстановка поточної кількості для вибраної пари «склад + товар» #}
+<div id="stock-data" hidden>
+    {% for record in stock_records %}<span data-warehouse="{{ record.0 }}" data-product="{{ record.1 }}" data-qty="{{ record.4 }}"></span>
+    {% endfor %}
+</div>
+
+<script>
+(function () {
+    // ключ: "код складу_код товару" -> кількість на цьому складі
+    var stock = {};
+    document.querySelectorAll('#stock-data span').forEach(function (item) {
+        stock[item.dataset.warehouse + '_' + item.dataset.product] = item.dataset.qty;
+    });
+
+    var product = document.getElementById('product_id');
+    var warehouse = document.getElementById('warehouse_id');
+    var quantity = document.getElementById('quantity');
+    if (!product || !warehouse || !quantity) { return; }
+
+    function fillQuantity() {
+        if (!product.value || !warehouse.value) {
+            quantity.value = '';
+            return;
+        }
+        var key = warehouse.value + '_' + product.value;
+        // якщо запису про цей товар на цьому складі ще немає, буде 0
+        quantity.value = (key in stock) ? stock[key] : 0;
+        quantity.focus();
+        quantity.select();
+    }
+
+    product.addEventListener('change', fillQuantity);
+    warehouse.addEventListener('change', fillQuantity);
+})();
+</script>
+
 <div class="panel">
     <h2>Поточні залишки</h2>
 

@@ -953,12 +953,14 @@ def manage_stock(request):
             """
         )
         stock_records = cursor.fetchall()
+        stock_map = {f"{r[0]}_{r[1]}": int(r[4]) for r in stock_records}
 
     return render(request, "inventory/stock.html", {
         "active_page": "warehouse_products",
         "products": products_rows,
         "warehouses": warehouses,
         "stock_records": stock_records,
+        "stock_map": stock_map,
     })
 
 
